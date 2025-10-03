@@ -1,0 +1,50 @@
+name: fdm-publisher-snap
+base: core22 
+version: '1.0'
+summary: A Flight Dynamics Model publisher
+description: |
+  Packages a C program that compiles multiple source files and links against the math library.
+
+grade: stable
+confinement: devmode
+
+parts:
+  fdm-publisher:
+    plugin: nil           # 使用 nil 插件手动控制编译过程
+    source: .          # <--- 保持不变：将源目录设置为 '..' (父目录)
+    
+    # 编译所需的系统软件包
+    build-packages:
+      - build-essential   # 包含 gcc, libc-dev, make 等
+    
+    # 手动编译和安装步骤
+    override-build: |
+      # 1. 编译程序。将可执行文件命名为 fdm_publisher 并在当前工作目录生成。
+      #    注意：此时的工作目录是 part 的临时构建目录，包含 source: .. 导入的所有文件
+      echo "Starting compilation..."
+      gcc -std=c99 main.c udp_io.c UAV_Dynamics.c \
+          -I. \
+          -I./mavlink/common \
+          -o fdm_publisher \
+          -lm
+          
+      # 2. 检查编译是否成功
+      if [ ! -f fdm_publisher ]; then
+          echo "Error: Compilation failed. fdm_publisher not found."
+          exit 1
+      fi
+      
+      # 3. 安装程序。将编译好的文件复制到 Snap 的最终安装路径。
+      #    $CRAFT_PART_INSTALL 是 Snapcraft 用来收集文件以打包成 Snap 的目录。
+      #    我们将其放在 bin 文件夹下，这是可执行文件的标准位置。
+      echo "Installing fdm_publisher to $CRAFT_PART_INSTALL/bin/"
+      mkdir -p $CRAFT_PART_INSTALL/bin
+      cp fdm_publisher $CRAFT_PART_INSTALL/bin/
+      
+apps:
+  fdm-publisher:
+    # command 应该指向 Snap 内部的路径，即 $SNAP/bin/fdm_publisher
+    command: bin/fdm_publisher 
+    plugs:
+      - network          # 允许网络访问
+      - network-bind     # 允许绑定网络端口
