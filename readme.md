@@ -19,3 +19,10 @@
 gcc -std=c99 main.c udp_io.c UAV_Dynamics.c     -I.     -I~/testcode/hellodemo/mavlink/common    -o fdm_publisher     -lm
 ./fdm_publisher
 ~~~
+
+
+## for snap
+* use 'snapcraft pack' to generate snap file
+* use 'sudo snap install fdm-publisher-snap_1.0_amd64.snap --dangerous --devmode' to intall locally
+* use 'fdm-publisher-snap.fdm-publisher' to run the application
+* More actions to improve the yaml settings and publish to snap store.
