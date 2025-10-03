@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "uav_dynamics.h": "c",
+        "mavlink.h": "c"
+    }
+}
