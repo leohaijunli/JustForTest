@@ -1,3 +1,8 @@
+## new feature
+Add a feature to publish ADS-B MAVLINK messages:
+(1) send_adsb_vehicle() is the main function to send the ith vehicle
+(2) const vehicle_t vehicles[] defines the vehicle id, GPS position(degE7) and altituede(mm)
+The message is defined at  https://github.com/mavlink/c_library_v2/blob/master/common/mavlink_msg_adsb_vehicle.h
 
 ## File structure:
 * main.c
