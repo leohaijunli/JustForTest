@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "uav_dynamics.h": "c",
-        "mavlink.h": "c"
+        "mavlink.h": "c",
+        "in.h": "c",
+        "common.h": "c"
     }
 }

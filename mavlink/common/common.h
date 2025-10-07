@@ -1482,6 +1482,7 @@ typedef enum ADSB_FLAGS
 } ADSB_FLAGS;
 #endif
 
+
 /** @brief Bitmap of options for the MAV_CMD_DO_REPOSITION */
 #ifndef HAVE_ENUM_MAV_DO_REPOSITION_FLAGS
 #define HAVE_ENUM_MAV_DO_REPOSITION_FLAGS

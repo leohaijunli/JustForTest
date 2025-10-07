@@ -5,7 +5,8 @@
 #include <time.h>
 #include <stdint.h>
 #include "mavlink/common/mavlink.h" 
-
+#include <netinet/in.h>
+#include <arpa/inet.h>
 // --- FDM MODEL HEADERS (Replace 'model_name' with your actual model name) ---
 #include "UAV_Dynamics.h" 
 // The FDM runs at a fixed rate, e.g., 100 Hz (10000 microseconds)
@@ -88,6 +89,58 @@ void mavlink_send_attitude() {
     udp_send_bytes(buf, len);
 }
 
+//Structure to hold static vehicle data
+typedef struct{
+    uint32_t icao_address;
+    int32_t latitude;     // degE7
+    int32_t longitude;    // degE7
+    int32_t altitude_msl; // mm
+    char callsign[9];
+} vehicle_t;
+
+// Stationary Vehicles Data
+const vehicle_t vehicles[] = {
+    {0x100001, 486801413, -1233990053, 500000, "UAVSIM03"}, // Los Angeles (Example)
+    {0x100002, 486102410, -1233990050, 500000, "UAVSIM01"}, // Los Angeles (Example)
+    {0x100003, 486403412, -1233990052, 500000, "UAVSIM02"}, // Los Angeles (Example)
+
+};
+#define NUM_VEHICLES (sizeof(vehicles) / sizeof(vehicles[0]))
+uint16_t adsb_flags_my = ADSB_FLAGS_VALID_COORDS | 
+                         ADSB_FLAGS_VALID_ALTITUDE | 
+                         ADSB_FLAGS_VALID_HEADING | 
+                         ADSB_FLAGS_VALID_VELOCITY | 
+                         ADSB_FLAGS_VALID_CALLSIGN | 
+                         ADSB_FLAGS_SIMULATED;
+
+void send_adsb_vehicle(const vehicle_t *vehicle) {
+    mavlink_message_t msg;
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+
+    // Encode the ADSB_VEHICLE message
+    mavlink_msg_adsb_vehicle_pack(
+        SYSTEM_ID, 
+        COMPONENT_ID, 
+        &msg, 
+        vehicle->icao_address, // ICAO Address
+        vehicle->latitude,     // Latitude in degE7
+        vehicle->longitude,    // Longitude in degE7
+        ADSB_ALTITUDE_TYPE_PRESSURE_QNH, // Altitude type
+        vehicle->altitude_msl, // Altitude in mm (MSL)
+        5,                     // Heading (0 for stationary)
+        1000000,                     // Horizontal Velocity (cm/s)
+        0,                     // Vertical Velocity (cm/s)
+        vehicle->callsign,     // Callsign
+        MAV_TYPE_QUADROTOR, // Emitter type
+        0,                     // Squawk (0)
+        adsb_flags_my, // Flags
+        0                      // Time since last communication (s)
+    );
+
+    uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+    udp_send_bytes(buf, len);
+}
+
 int main(void) {
     long long loop_counter = 0;
 
@@ -120,11 +173,19 @@ int main(void) {
         if (loop_counter % 100 == 0) {
             mavlink_send_heartbeat();
             printf("HEARTBEAT Sent. Loop: %lld\n", loop_counter);
+            
         }
+
+
+
 
         // Attitude at 50 Hz (20ms / 10ms step = 2 steps)
         if (loop_counter % 2 == 0) {
              mavlink_send_attitude();
+            for (int i = 0; i < 3; i++) {
+            // Note: Mavlink pack functions automatically update the sequence number 'g_sequence'
+                send_adsb_vehicle(&vehicles[i]);
+            }
         }
         
         loop_counter++;
